@@ -83,7 +83,7 @@ class MyAccessibilityService : AccessibilityService() {
             // Set the type of events that this service wants to listen to. Others
             // won't be passed to this service.
             eventTypes =
-                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_VIEW_FOCUSED
+                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_WINDOWS_CHANGED or AccessibilityEvent.TYPE_VIEW_FOCUSED
 
             // If you only want this service to work with specific applications, set their
             // package names here. Otherwise, when the service is activated, it will listen
