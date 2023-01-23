@@ -7,15 +7,26 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.PixelFormat
+import android.os.Build
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import com.example.accessibilityservicetest.R
 
 
 class MyAccessibilityService : AccessibilityService() {
 
+    private lateinit var view: View
+    private var windowManager: WindowManager? = null
+
     companion object {
         private const val TAG = "MyAccessibilityService"
     }
+
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
 
@@ -40,9 +51,32 @@ class MyAccessibilityService : AccessibilityService() {
             Thread.sleep(500)
             // Todo add here blocked app list and check
             if (label.toString().uppercase() == "CONTACTS") {
-                val result = performGlobalAction(GLOBAL_ACTION_BACK)
-                Log.d(TAG, "make back action result: $result")
+//                val result = performGlobalAction(GLOBAL_ACTION_BACK)
+//                Log.d(TAG, "make back action result: $result")
+
+                displayOverlay()
+            } else {
+                if (label.toString()
+                        .uppercase() != applicationContext.resources.getString(R.string.app_name)
+                        .uppercase()
+                ) {
+                    removeOverlay()
+                }
             }
+
+            /*if (event?.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+                if ((event.contentDescription == "back"
+                            || event.contentDescription == "navigate up")
+                ) {
+                    // Handle back press event
+//                    windowManager?.let {
+                        removeOverlay()
+                        val result = performGlobalAction(GLOBAL_ACTION_BACK)
+                        Log.d(TAG, "make back action result: $result")
+//                    }
+
+                }
+            }*/
 
 
         } catch (e: Exception) {
@@ -52,6 +86,52 @@ class MyAccessibilityService : AccessibilityService() {
 //        val apps = getLaunchableInstalledApps(this)
 //        Log.d(TAG, "onAccessibilityEvent: $apps")
     }
+
+    private fun displayOverlay() {
+
+        val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            WindowManager.LayoutParams.TYPE_PHONE;
+        }
+
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+//                    or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+//            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        )
+
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
+        view = inflater.inflate(R.layout.floating_view, null)
+        windowManager?.addView(view, params)
+
+    }
+
+    private fun removeOverlay() {
+        windowManager?.removeView(view)
+        windowManager = null
+
+        try {
+            // remove the view from the window
+            (getSystemService(WINDOW_SERVICE) as WindowManager).removeView(view)
+            // invalidate the view
+            view.invalidate()
+            // remove all views
+            (view.parent as ViewGroup).removeAllViews()
+
+            // the above steps are necessary when you are adding and removing
+            // the view simultaneously, it might give some exceptions
+        } catch (e: java.lang.Exception) {
+            Log.d("Error2", e.toString())
+        }
+    }
+
 
     private fun getLaunchableInstalledApps(context: Context): List<String> {
         val pm: PackageManager = context.packageManager
@@ -68,7 +148,15 @@ class MyAccessibilityService : AccessibilityService() {
             }
         }
 
-        return list.map { it.packageName.toString() }
+        return list.filter {
+            it.packageName.toString().uppercase() != applicationContext.resources.getString(
+                R.string.app_name
+            ).uppercase()
+        }.map { it.packageName.toString() }.minus(
+            applicationContext.resources.getString(
+                R.string.app_name
+            )
+        )
     }
 
     override fun onInterrupt() {
@@ -110,5 +198,11 @@ class MyAccessibilityService : AccessibilityService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return Service.START_STICKY;
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        removeOverlay()
     }
 }

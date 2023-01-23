@@ -2,6 +2,8 @@ package com.example.accessibilityservicetest
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
@@ -11,9 +13,13 @@ import com.example.accessibilityservicetest.databinding.ActivityMainBinding
 
 
 class MainActivity : AppCompatActivity() {
+    companion object{
+        const val REQUEST_CODE_OVERLAY_PERMISSION = 1001
+    }
 
     private lateinit var binding: ActivityMainBinding
     private val context = this
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,5 +53,17 @@ class MainActivity : AppCompatActivity() {
             // request permission via start activity for result
             startActivity(intent)
         }
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                startActivityForResult(intent, REQUEST_CODE_OVERLAY_PERMISSION)
+            } else {
+                // Permission already granted, you can create the overlay
+            }
+        }
+
+
     }
 }
