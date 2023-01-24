@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.widget.TextView
 import com.example.accessibilityservicetest.R
 
 
@@ -89,6 +90,18 @@ class MyAccessibilityService : AccessibilityService() {
 
     private fun displayOverlay() {
 
+        val resources = applicationContext.resources
+        val metrics = resources.displayMetrics
+        val navigationBarHeight = resources.getDimensionPixelSize(
+            resources.getIdentifier(
+                "navigation_bar_height",
+                "dimen",
+                "android"
+            )
+        )
+        val navigationBarWidth = metrics.widthPixels - resources.displayMetrics.widthPixels
+        Log.d(TAG, "displayOverlay: Height: $navigationBarHeight and Width: $navigationBarWidth")
+
         val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
         } else {
@@ -100,7 +113,6 @@ class MyAccessibilityService : AccessibilityService() {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-//                    or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 //            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
@@ -109,6 +121,10 @@ class MyAccessibilityService : AccessibilityService() {
         val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
         view = inflater.inflate(R.layout.floating_view, null)
+        view.findViewById<TextView>(R.id.textView).setOnClickListener {
+            val result = performGlobalAction(GLOBAL_ACTION_BACK)
+            Log.d(TAG, "make back action result: $result")
+        }
         windowManager?.addView(view, params)
 
     }

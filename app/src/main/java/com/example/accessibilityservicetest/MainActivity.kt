@@ -1,20 +1,25 @@
 package com.example.accessibilityservicetest
 
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.accessibilityservicetest.databinding.ActivityMainBinding
+import com.example.accessibilityservicetest.services.MyAccessibilityService
 
 
 class MainActivity : AppCompatActivity() {
-    companion object{
+    companion object {
         const val REQUEST_CODE_OVERLAY_PERMISSION = 1001
+        private const val TAG = "MainActivity"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -45,8 +50,11 @@ class MainActivity : AppCompatActivity() {
         val accessibilityManager =
             getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
 
+        Log.d(TAG, "checkAccessibilityPermission: ${accessibilityManager.isEnabled}")
         // Check if the accessibility service is enabled
-        if (!accessibilityManager.isEnabled) {
+        // if (!accessibilityManager.isEnabled) {
+
+        if (!isAccessibilityServiceEnabled()) {
             // The accessibility service is not enabled
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -57,7 +65,10 @@ class MainActivity : AppCompatActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
                 startActivityForResult(intent, REQUEST_CODE_OVERLAY_PERMISSION)
             } else {
                 // Permission already granted, you can create the overlay
@@ -65,5 +76,11 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+    }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        val serviceName = "${applicationContext.packageName}/${MyAccessibilityService::class.java.name}"
+        return enabledServices.contains(serviceName)
     }
 }
